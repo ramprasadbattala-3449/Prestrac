@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Leave Tracker — MSS Pharma Associates</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"/>
+</head>
+<body>
+  <header class="header">
+    <div class="header-inner">
+      <div class="header-brand">
+        <span class="brand-pill">MSS</span>
+        <span class="brand-name">Leave Tracker</span>
+      </div>
+      <div class="header-meta" id="current-month-label"></div>
+    </div>
+  </header>
+
+  <main class="main">
+    <!-- TABS -->
+    <div class="tabs">
+      <button class="tab active" data-tab="log">Log attendance</button>
+      <button class="tab" data-tab="visual">Visual reference</button>
+      <button class="tab" data-tab="dashboard">Dashboard</button>
+      <button class="tab" data-tab="history">History</button>
+    </div>
+
+    <!-- ======================== LOG PANEL ======================== -->
+    <div class="panel active" id="panel-log">
+      <div class="form-card">
+        <div class="form-title">Record attendance / leave</div>
+
+        <div class="field">
+          <label>Employee name</label>
+          <select id="f-name">
+            <option value="">— select —</option>
+            {% for m in team %}
+            <option value="{{ m }}">{{ m }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="row2">
+          <div class="field">
+            <label>From date</label>
+            <input type="date" id="f-from" value="{{ today }}"/>
+          </div>
+          <div class="field">
+            <label>To date</label>
+            <input type="date" id="f-to" value="{{ today }}"/>
+          </div>
+        </div>
+        <div class="date-hint" id="date-hint"></div>
+
+        <div class="field">
+          <label>Work mode</label>
+          <select id="f-mode">
+            <option value="">— select —</option>
+            {% for key, label in modes.items() %}
+            <option value="{{ key }}">{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Shift change sub-panel -->
+        <div class="shift-box" id="shift-box">
+          <div class="shift-label">Select shift</div>
+          <div class="shift-tiles">
+            {% for key, label in shifts.items() %}
+            <div class="shift-tile {{ key }}" data-shift="{{ key }}" id="tile-{{ key }}">
+              <div class="s-name">{{ label.split('(')[0].strip() }}</div>
+              <div class="s-time">({{ label.split('(')[1] }}</div>
+            </div>
+            {% endfor %}
+          </div>
+          <div class="field" style="margin-top:10px;margin-bottom:0">
+            <label>Reason for shift change</label>
+            <input type="text" id="f-shift-reason" placeholder="e.g. covering for colleague…"/>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Notes (optional)</label>
+          <input type="text" id="f-notes" placeholder="e.g. client visit, personal errand…"/>
+        </div>
+
+        <button class="submit-btn" id="submit-btn">Submit entry</button>
+        <div class="msg ok" id="ok-msg"></div>
+        <div class="msg er" id="er-msg"></div>
+      </div>
+    </div>
+
+    <!-- ======================== VISUAL PANEL ======================== -->
+    <div class="panel" id="panel-visual">
+      <div class="viz-bar">
+        <label>Month</label>
+        <select id="viz-month">
+          {% for val, label in months %}
+          <option value="{{ val }}">{{ label }}</option>
+          {% endfor %}
+        </select>
+        <label>View</label>
+        <select id="viz-view">
+          <option value="team">Team overview</option>
+          <option value="person">Per person</option>
+        </select>
+      </div>
+      <div class="stats-grid" id="viz-stats"></div>
+      <div class="charts-grid">
+        <div class="chart-card">
+          <div class="chart-title">Team breakdown this month</div>
+          <div class="legend" id="donut-legend"></div>
+          <div style="position:relative;width:100%;height:220px"><canvas id="donutChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Days per person</div>
+          <div class="legend" id="bar-legend"></div>
+          <div id="bar-wrap" style="position:relative;width:100%;height:220px"><canvas id="barChart"></canvas></div>
+        </div>
+      </div>
+      <div id="person-cards"></div>
+    </div>
+
+    <!-- ======================== DASHBOARD PANEL ======================== -->
+    <div class="panel" id="panel-dashboard">
+      <div class="viz-bar">
+        <label>Month</label>
+        <select id="dash-month">
+          {% for val, label in months %}
+          <option value="{{ val }}">{{ label }}</option>
+          {% endfor %}
+        </select>
+        <button class="export-btn" id="export-btn">Export CSV</button>
+      </div>
+      <div class="stats-grid" id="dash-stats"></div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Employee</th><th>Office</th><th>WFH</th>
+              <th>Shifts</th><th>Leave</th><th>Sick</th><th>WFH %</th>
+            </tr>
+          </thead>
+          <tbody id="dash-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ======================== HISTORY PANEL ======================== -->
+    <div class="panel" id="panel-history">
+      <div class="viz-bar">
+        <label>Filter by person</label>
+        <select id="hist-filter">
+          <option value="">All members</option>
+          {% for m in team %}
+          <option value="{{ m }}">{{ m }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>From</th><th>To</th><th>Days</th>
+              <th>Employee</th><th>Mode</th><th>Details</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="hist-tbody">
+            <tr><td class="empty" colspan="7">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- Edit modal (manager overwrite) -->
+  <div id="edit-overlay" style="display:none;min-height:400px;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;padding:2rem;">
+    <div class="modal-card" id="edit-modal">
+      <div class="modal-title">Edit entry <span class="manager-badge">Manager overwrite</span></div>
+      <input type="hidden" id="edit-idx"/>
+      <div class="row2">
+        <div class="field"><label>From date</label><input type="date" id="edit-from"/></div>
+        <div class="field"><label>To date</label><input type="date" id="edit-to"/></div>
+      </div>
+      <div class="field">
+        <label>Work mode</label>
+        <select id="edit-mode">
+          {% for key, label in modes.items() %}
+          <option value="{{ key }}">{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field"><label>Notes</label><input type="text" id="edit-notes"/></div>
+      <div style="display:flex;gap:8px;margin-top:1rem">
+        <button class="submit-btn" style="flex:1" id="edit-save-btn">Save changes</button>
+        <button class="cancel-btn" id="edit-cancel-btn">Cancel</button>
+      </div>
+      <div class="msg er" id="edit-er"></div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
