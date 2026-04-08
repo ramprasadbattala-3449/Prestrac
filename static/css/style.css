@@ -1,10 +1,10 @@
 /* ===== Reset & Base ===== */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
-  --bg: #ffffff;
-  --bg-2: #f6f6f4;
-  --bg-3: #f0ede8;
-  --text: #1a1a18;
+  --bg: #1014e6;
+  --bg-2: #0ca6e8;
+  --bg-3: #7b1cd4;
+  --text: #f0f0f2;
   --text-2: #5f5e5a;
   --text-3: #888780;
   --border: rgba(0,0,0,.12);
